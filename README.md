@@ -1,3 +1,3 @@
-# myproject
+# Modeling BELLHOP equation
 
-This project is the first step to present my official work about beamforming
+Underwater acoustic using BELLHOP equation
