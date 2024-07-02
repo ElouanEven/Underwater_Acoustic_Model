@@ -5,6 +5,7 @@ Underwater acoustic using BELLHOP equation
 Model include :
 - Sound Speed Profile
 - Reflexion for flat surface and bottom
+- Varying sea bottom
 - Absorption depending on frequency
 - Intensity and transfer loss
 - Receiver
@@ -13,10 +14,10 @@ Model include :
     * ploting only rays detect by receiver
  
 TO DO :
-- varying sea bottom
-- creating time signal at the source
-- recompose time signal on the hydrophone
-- surface and bottom loss
+- Creating time signal at the source
+- Resolution time delay expensive
+- Recompose time signal on the hydrophone
+- Surface and bottom loss
 - Ray phases
 - Add multiple Hydrophone
 - Beamforming
