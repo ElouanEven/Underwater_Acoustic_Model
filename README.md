@@ -12,6 +12,8 @@ Model include :
     * detecting rays crossing
     * recording time and intensity delay
     * ploting only rays detect by receiver
+- Second Hydrophone
+- Segmentation in function
  
 TO DO :
 - Creating time signal at the source
