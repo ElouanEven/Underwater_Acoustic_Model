@@ -8,9 +8,9 @@ function [] = Plot_Environment(H_values, H_d, distance, W, surface_z, SRC_z, REC
     plot([REC_r; REC_r], [REC_z; REC_z+width], 'r', 'LineWidth', 4);  % Receiver
     plot([0, W], [surface_z, surface_z], 'k', 'LineWidth', 2);  % Surface
     % Plot surface and seabed
-    xlabel('Distance from source (m)', 'LineWidth', 2);
+    xlabel('Range (m)', 'LineWidth', 2);
     ylabel('Altitude (m)', 'LineWidth', 2);
     title('Bathymetrie', 'LineWidth', 2);
-    legend('Data', 'Interpolation', 'Source', 'Receiver', 'LineWidth', 2);
+    legend('Data', 'Seabed', 'Source', 'Receiver', 'LineWidth', 2);
     hold off;
 end
