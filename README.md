@@ -14,14 +14,13 @@ Model include :
     * ploting only rays detect by receiver
 - Second Hydrophone
 - Segmentation in function
+- Creating time signal at the source
+- Add multiple receivers
+- Recompose time signal on receivers
  
 TO DO :
-- Creating time signal at the source
 - Resolution time delay expensive
-- Recompose time signal on the hydrophone
 - Surface and bottom loss
-- Ray phases
-- Add multiple Hydrophone
 - Beamforming
     * DaS
     * 
@@ -31,7 +30,7 @@ TO DO :
 - Applying spherical harmonic on hydrophone
 
 Corrections :
--  Pic curvature not continuous
--  
+- Pic curvature not continuous 
+- Scale everything down for time computation + Modification of variables physical nonsense
 
 
