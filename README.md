@@ -17,9 +17,10 @@ Model include :
 - Creating time signal at the source
 - Add multiple receivers
 - Recompose time signal on receivers
+- Reduction of the range between source and receivers for time computation
+- DaS Beamforming for direct rays
  
 TO DO :
-- Resolution time delay expensive
 - Surface and bottom loss
 - Beamforming
     * DaS
