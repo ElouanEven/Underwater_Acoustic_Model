@@ -18,20 +18,24 @@ Model include :
 - Add multiple receivers
 - Recompose time signal on receivers
 - Reduction of the range between source and receivers for time computation
-- DaS Beamforming for direct rays
+- DaS Beamforming :
+     * For direct rays
+     * For reflected rays
+- Optimization of the computational time by decorelating dt and Fs
  
 TO DO :
 - Surface and bottom loss
 - Beamforming
-    * DaS
-    * 
+    * MVDR
+    * LS
+    * MUSIC
 - Optimize code
 - Discover 2D*N and 3D reprensentation
 - Try different form of arrays
 - Applying spherical harmonic on hydrophone
 
 Corrections :
-- Pic curvature not continuous 
+- Pic curvature not C1 continuous 
 - Scale everything down for time computation + Modification of variables physical nonsense
 
 

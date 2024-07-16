@@ -6,30 +6,30 @@ tic
 
 % Source and receiver position %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 SRC_z = -2;     % Source depth
-REC_r = 10;     % Receiver distance %10
+REC_r = 10;     % Receiver distance
 rec_z = -8;     % Receiver depth
-width = 0.05; %0.1;    % Receiver width
-space = 0.01; %0.05;    % Space between receivers
-nbr_rec = 5;    % Number of receiver on the receiver array
+width = 0.04;   % Receiver width
+space = 0.005;  % Space between receivers
+nbr_rec = 10;   % Number of receiver on the receiver array
 REC_z = rec_z + (0:(nbr_rec-1)) * (width+space); % array of the z position of each receiver
-theta_aperture = 140;  % Total aperture angle (in degree) %150
-num_rays = 1500;  % Number of rays emmited from the source
+theta_aperture = 90;  % Total aperture angle (in degree)
+num_rays = 1000;  % Number of rays emmited from the source
 
 surface_z = 0; % Surface location
 H = -10;       % Depth
-W = REC_r*1.1; % Maximum range  !!! Width depend to the placement of the receiver !!!
+W = REC_r*1.1; % Maximum range  !!! Width depend to the range of the receivers !!!
 
 rho_air   = 1.225; % air density
 rho_water = 1028;  % water density
-rho_sand  = 1850;  % sand density
+rho_sand  = 1850;  % sand density   !!! Defining real rho !!!
 
 c_air = 340;    % Sound speed in air
 c_water_mean = 1500; % Approximation of sound speed in water
 c_sand = 1700;  % Sound speed in sand   !!! Page 39 Computational Ocean Acoustic !!!
 
 % Sound Speed Profile %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-depths   = [   0,   -1,   -2,   -3,   -4,   -5,   -6,   -7,   -8,   -9,  -10];
-c_values = [1500, 1400, 1340, 1240, 1100, 1000, 1100, 1240, 1340, 1400, 1500]; % !!! Augmented values of real SSP !!!
+depths   = [   0,   -1,   -2,   -3,   -4,   -5,   -6,   -7,  -8,  -9, -10];
+c_values = [1500, 1470, 1400, 1350, 1280, 1200, 1100, 1000, 970, 960, 950]; % [1500, 1400, 1340, 1240, 1100, 1000, 1100, 1240, 1340, 1400, 1500]; % !!! Augmented values of real SSP !!!
 c = @(z) interp1(depths, c_values, z, 'spline'); % Interpolated sound speed function
 
 % Seabed altitude %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -39,20 +39,20 @@ H_d = @(r) interp1(distance, H_values, r, 'linear'); % Interpolated seabed altit
 
 % Emitted signal %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 Amplitude_sig = 1; % Signal amplitude from the source
-I_0 = (Amplitude_sig^2) / (2*rho_water*c_water_mean); % Source intensity
-Fs = 2e5;     % Sampling frequency (Hz)
-dt = 1/Fs;    % Time step
+I_0 = (Amplitude_sig^2) / (2*rho_water*c_water_mean); % Source intensity   !!! Which value of c do we have to use ??? !!!
+Fs = 5e5;     % Sampling frequency (Hz)
+
+dt = 1/1e4;   % Time step              !!! Not linked to the Sampling Frequency anymore !!!
 Fc = 1e4;     % Carrier frequency (Hz)
 f = Fc*1e-3;  % f in kHz
 absorption = (3.3e-3 + (0.11*f^2)/(1+f^2) + (44*f^2)/(4100+f^2) +3e-4*f^2)*1e-3; % Absorption (dB/m)    !!! Page 36 Computational Ocean Acoustic !!!
 
-dur = 0.001;     % Signal duration (sec)
+dur = 0.001;  % Signal duration (sec)
 
 T = (0:(Fs*dur-1)) / Fs; % Time vector
 sig = sin(2*pi*Fc*T); % Signal from the source
-len_0 = Fc*2; % !!! Approximation of the total length vector !!!
+len_0 = floor(2*W/min(c(-10:0))*Fs); % !!! Approximation of the total time length vector !!!
 T_0 = (0:(len_0)-1) / Fs;
-
 
 
 % Initialize intensity range for color mapping
@@ -96,6 +96,9 @@ if width+space > c(rec_z)/(2*Fc)
     disp("Spatial aliasing")
 end
 
+if dur < 2*Fc
+    disp("Signal duration too short")
+end
 
 
 fprintf('----- Parameters : %.2f s -----\n', toc);
@@ -110,6 +113,7 @@ for i = 1:num_rays           % For each rays
     [rays_r{i}, rays_z{i}, rays_intensity{i}, nbr_reflexion(i)] = Ray_tracing(theta, SRC_z, I_0, H_d, c, W, absorption, dt);
     intensity_min = min(intensity_min, min(rays_intensity{i}));
     intensity_max = max(intensity_max, max(rays_intensity{i}));
+
 end
 
 fprintf('----- Rays : %.2f s -----\n', toc);
@@ -118,7 +122,7 @@ fprintf('----- Rays : %.2f s -----\n', toc);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 tic
 
-[ID_ray, delay_t, delay_i] = Cross_multiple_receivers(rays_r, rays_z, rays_intensity, REC_r, REC_z, width, dt, nbr_reflexion);
+[ID_ray, delay_t, delay_i] = Cross_multiple_receivers(rays_r, rays_z, rays_intensity, REC_r, REC_z, width, dt, nbr_reflexion, c(rec_z), absorption);
 
 fprintf('----- Cross Receivers : %.2f s -----\n', toc);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -126,10 +130,10 @@ fprintf('----- Cross Receivers : %.2f s -----\n', toc);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 tic
 
-SIG = zeros(len_0, nbr_rec);%cell(1, nbr_rec);
+SIG = zeros(len_0, nbr_rec);
 for k = 1:nbr_rec % For all receivers
     for i = 1:length(ID_ray{1,k}) % For all rays arriving on the receiver k
-        i_timedelay = round(delay_t{1,k}(i)/dt);
+        i_timedelay = round(delay_t{1,k}(i)*Fs);
         i_start = i_timedelay;
         i_end = i_timedelay+(length(sig));
         sig_delay = sig*sqrt(delay_i{1,k}(i) * 2*rho_water*c_water_mean); % Do we have to use the c_water_mean or the c(rec_z) ???
@@ -139,7 +143,7 @@ end
 
 fprintf('----- Time signal on receivers : %.2f s -----\n', toc);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% %%%%%%% Plot %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% %%%%%%% Plots %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 tic
 
@@ -204,7 +208,7 @@ fprintf('----- Plot : %.2f s -----\n', toc);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% %%%%%%% Beamforming %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
+tic
 
 % Adding white noise to all signals
 
@@ -257,25 +261,22 @@ for k = 1:nbr_rec
     Delay_color = floor((k / nbr_rec) * 255) + 1;
     plot(T_0, filtered_SIG(:,k), 'Color', JET(Delay_color, :));
 end
-title('Time signal with noise on receivers');
+title('Time signal with noise filtered');
 xlabel('Time (s)', 'LineWidth', 2);
 ylabel('Amplitude', 'LineWidth', 2);
 hold off
 
-
+fprintf('----- Time signal with noise : %.2f s -----\n', toc);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+tic
 
 
-
-Lfilt = 80;
+Lfilt = 200;
 
 N_phi = 180; % Phi resolution
 PHI = 0:pi/N_phi:pi-pi/N_phi; % PHI is referenced to the vertical z-axis upward
 % To obtain the angle of arrival on the receiver (theta) we should substract 90° 
 c_iso = c(rec_z); % Sound speed considered iso around the receivers
-
-
-%T_snap = 0:Lfilt:len_0-Lfilt;  % No overlap for now
 
 Overlap = 0.6;          % Overlap
 T_snap = 0:Lfilt*(1-Overlap):len_0-Lfilt; % Time for each start snapshot with overlap
@@ -288,7 +289,7 @@ F = (0:Lfilt/2-1)*Fs/Lfilt;
 ENERGY = zeros(length(T_snap),N_phi);
 HannW = meshgrid(hann(Lfilt), zeros(nbr_rec,1)); % Hanning window to multiply to each x_snap sensor
 
-for t_snap = 1:500 %length(T_snap)
+for t_snap = 1:length(T_snap)
     SIG_snap = SIG_noisy(T_snap(t_snap)+1:T_snap(t_snap)+Lfilt,:);
     SIG_snap_window = HannW' .* SIG_snap;       % Application of the hanning window on the snapshot signal
     FFT_x = fft(SIG_snap_window);             % Fourier transform
@@ -310,7 +311,6 @@ for t_snap = 1:500 %length(T_snap)
     Energy = Y_abs.^2;  % Energy
 
     ENERGY(t_snap,:) = mean(Energy,1);
-    
 end
 
 
@@ -326,5 +326,10 @@ zlabel('Amplitude');
 title('Energy (with BandPass filtering)');
 set(gca, 'fontsize', 20, 'linewidth',2)
 set(findall(gcf, 'Type', 'Line'),'LineWidth',2); 
-xlim([0.006 0.03]);
+%xlim([0 0.005]);
+%zlim([0 10]);
 colorbar;
+
+
+fprintf('----- Beamformer : %.2f s -----\n', toc);
+

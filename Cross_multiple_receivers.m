@@ -1,4 +1,4 @@
-function [ID_ray, delay_t, delay_i] = Cross_multiple_receivers(rays_r, rays_z, rays_intensity, REC_r, REC_z, width, dt, nbr_reflexion)
+function [ID_ray, delay_t, delay_i] = Cross_multiple_receivers(rays_r, rays_z, rays_intensity, REC_r, REC_z, width, dt, nbr_reflexion, c_REC_z, absorption)
     nbr_rec = length(REC_z);
     ID_ray = cell(1, nbr_rec);
     delay_t = cell(1, nbr_rec);
@@ -13,9 +13,12 @@ function [ID_ray, delay_t, delay_i] = Cross_multiple_receivers(rays_r, rays_z, r
                 f_REC_r = A*REC_r + B;
                 for k =1:nbr_rec
                     if (f_REC_r > REC_z(k)) && (f_REC_r < REC_z(k)+width) 
+                        
+                        dist_ray_rec = sqrt((REC_r-rays_r{1,i}(j))^2 + (f_REC_r-rays_z{1,i}(j))^2); % Distance between the  last ray and the receiver
+
                         ID_ray{1,k} = [ID_ray{1,k}, i];
-                        delay_t{1,k} = [delay_t{1,k}, dt*(j - nbr_reflexion(i))];
-                        delay_i{1,k} = [delay_i{1,k}, rays_intensity{1,i}(j)];
+                        delay_t{1,k} = [delay_t{1,k}, dt*(j - nbr_reflexion(i)) + dist_ray_rec/c_REC_z];
+                        delay_i{1,k} = [delay_i{1,k}, rays_intensity{1,i}(j)*10^(-absorption * dist_ray_rec / 10)];
                         theta = [theta, atand(A)];
                     end
                 end
