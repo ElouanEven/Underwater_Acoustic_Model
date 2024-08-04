@@ -12,19 +12,23 @@ Model include :
     * detecting rays crossing
     * recording time and intensity delay
     * ploting only rays detect by receiver
-- Second Hydrophone
+- Hydrophone Array
 - Segmentation in function
 - Creating time signal at the source
 - Add multiple receivers
-- Recompose time signal on receivers
+- Recompose time signal on receivers and add noise
 - Reduction of the range between source and receivers for time computation
 - DaS Beamforming :
      * For direct rays
      * For reflected rays
 - Optimization of the computational time by decorelating dt and Fs
+- Return of the rays to search the position of the source
  
 TO DO :
-- Surface and bottom loss
+- Find the best spot of the source with time correlation
+- Implement a threshold for max transfer loss
+- Surface and bottom loss (tested but not clear)
+- Use different input signal and their properties (sweep)
 - Beamforming
     * MVDR
     * LS

@@ -1,4 +1,4 @@
-function [r, z, intensity, nbr_reflexion] = Ray_tracing(theta, SRC_z, I_0, H_d, c, W, absorption, dt)
+function [r, z, intensity, nbr_reflexion] = Ray_tracing(theta, SRC_z, I_0, H_d, c, W, absorption, dt, c_sand, rho_sand, rho_water, R_coef)
     % Ray_tracing - Compute one ray trace starting from the source with an angle theta under the influence of sound speed pressure with seabed and surface reflexion  
     %
     % Inputs:
@@ -10,6 +10,8 @@ function [r, z, intensity, nbr_reflexion] = Ray_tracing(theta, SRC_z, I_0, H_d, 
     %    W   - Width max (max range)
     %    absorption  - Absorption (in dB/m)
     %    dt  - time step
+    %    {c_sand, rho_sand, rho_water} - Environment condition (interesting for R_coef) !!! Not implemented yet !!!
+    %    R_coef - Reflexion value for all grazing angle
     % 
     % Outputs:
     %    [r, z] - Ray coordonates
@@ -17,15 +19,12 @@ function [r, z, intensity, nbr_reflexion] = Ray_tracing(theta, SRC_z, I_0, H_d, 
     %    nbr_reflexion  - Number of reflexion (surface and bottom)
     %
     %
-    % Possible problem in case of a poor time resolution :
+    % Possible problems in case of a poor time resolution :
     %   - Reflexion out of bound (>W) on the ground
     %   - Surface and bottom reflexion on the first ray
-    %   - Reflexion on the sea bottom misplaced (the slop will be calcul at the end point and not at the actual detection of the seabed)
     %   
-    %   
-    %
     %-----------------------------------------------------------------------------------------------
-
+    delta = 0.01; % Width of the slope calcul
 
     MAX_STEP = floor(W/(c(SRC_z)*dt) * 10); % Estimation of the max number of increments with theta_aperture < 90
     r = zeros(1,MAX_STEP);
@@ -33,8 +32,9 @@ function [r, z, intensity, nbr_reflexion] = Ray_tracing(theta, SRC_z, I_0, H_d, 
     intensity = zeros(1,MAX_STEP);
     
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-    % Initialize the ray path and intensity
+    %% Initialize the ray path and intensity
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
     dr_0 = c(SRC_z) * cosd(theta) * dt;
     dz_0 = c(SRC_z) * sind(theta) * dt;
     intensity_ref_0 = I_0 * 10^(-absorption * c(z(end))*dt / 10);
@@ -49,7 +49,7 @@ function [r, z, intensity, nbr_reflexion] = Ray_tracing(theta, SRC_z, I_0, H_d, 
         
     elseif SRC_z + dz_0 < H_d(dr_0) % The first ray touches the seabed %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-        theta_bot = atand(H_d(dr_0+1)-H_d(dr_0)); % Bottom slop (calcul with 1m)
+        theta_bot = atand((H_d(dr_0+delta)-H_d(dr_0))/delta); % Bottom slop (calcul with 1m)
         r_bot = (SRC_z-H_d(dr_0))/(tand(abs(theta))+tand(theta_bot));     
         z_bot = H_d(r_bot);
         dist_ground = sqrt((dr_0 - r_bot)^2 + (SRC_z+dz_0 - z_bot)^2);
@@ -72,8 +72,7 @@ function [r, z, intensity, nbr_reflexion] = Ray_tracing(theta, SRC_z, I_0, H_d, 
         count_ref = 1;
         i = 3;
 
-
-    else
+    else % Nominal condition %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         r(1:2) = [    0,         dr_0];
         z(1:2) = [SRC_z, SRC_z + dz_0];
         intensity(1:2) = [I_0, intensity_ref_0]; % Intensity
@@ -81,8 +80,11 @@ function [r, z, intensity, nbr_reflexion] = Ray_tracing(theta, SRC_z, I_0, H_d, 
         i = 2;
     end
 
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    %% Ray computation
+    %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-    while (r(i) < W && i < MAX_STEP)  % While the ray is in the rectangle
+    while (r(i) < W && i < MAX_STEP)  % While the ray is in the rectangle %%%%%%%%%%%%%%%%%%%%%%%%%%
 
         % Actual conditions
         last_c    = c(z(i-1)); % Sound speed at last depth
@@ -111,7 +113,12 @@ function [r, z, intensity, nbr_reflexion] = Ray_tracing(theta, SRC_z, I_0, H_d, 
 
         % On bottom %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
         elseif z(i) + dz < H_d(r(i) + dr)
-            theta_bot = atand(H_d(r(i)+1)-H_d(r(i))); % Bottom slop (calcul with 1m)
+
+            intensity_ref = intensity(i) * 10^(-absorption * c(z(i))*dt / 10);
+            intensity_R = intensity_ref * 10^(-R_coef(theta) / 10);
+            intensity(i+1:i+2) = [intensity_R, intensity_R];
+
+            theta_bot = atand((H_d(r(i)+delta)-H_d(r(i)))/delta); % Bottom slop (calcul with 1m)
             r_bot = r(i) + (z(i)-H_d(r(i)))/(tand(abs(theta))+tand(theta_bot));     
             z_bot = H_d(r_bot);
             dist_ground = sqrt((r(i)+dr - r_bot)^2 + (z(i)+dz - z_bot)^2);
@@ -124,14 +131,11 @@ function [r, z, intensity, nbr_reflexion] = Ray_tracing(theta, SRC_z, I_0, H_d, 
                 nbr_reflexion = count_ref;
                 return
             end
-
             r_ref = r_bot + dist_ground*cosd(theta);
             z_ref = z_bot + dist_ground*sind(theta);
             r(i+1:i+2) = [r_bot, r_ref];
             z(i+1:i+2) = [z_bot, z_ref];
-            
-            intensity_ref = intensity(i) * 10^(-absorption * c(z(i))*dt / 10);
-            intensity(i+1:i+2) = [intensity_ref, intensity_ref];
+
             count_ref = count_ref + 1;
             i=i+2;
 
@@ -142,7 +146,6 @@ function [r, z, intensity, nbr_reflexion] = Ray_tracing(theta, SRC_z, I_0, H_d, 
             intensity(i+1) = intensity(i) * 10^(-absorption * c(z(i))*dt / 10);
             i=i+1;
         end
-
     end
     r = r(1:i);
     z = z(1:i);
