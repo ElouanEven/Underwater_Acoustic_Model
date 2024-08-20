@@ -23,6 +23,7 @@ Model include :
      * For reflected rays
 - Optimization of the computational time by decorelating dt and Fs
 - Return of the rays to search the position of the source
+- Results impressive (<1% for 700m range)
  
 TO DO :
 - Find the best spot of the source with time correlation
@@ -39,7 +40,4 @@ TO DO :
 - Applying spherical harmonic on hydrophone
 
 Corrections :
-- Pic curvature not C1 continuous 
-- Scale everything down for time computation + Modification of variables physical nonsense
-
-
+- Pic curvature not C1 continuous
