@@ -22,9 +22,9 @@ function [ID_ray, delay_t, delay_i] = Cross_multiple_receivers(rays_r, rays_z, r
     delay_t = cell(1, nbr_rec);
     delay_i = cell(1, nbr_rec);
     for i = 1:length(rays_r) % For each rays
-        for j = 1:length(rays_r{1,i})-1 % For each point of this ray
+        for j = 1:length(rays_r{1,i})-1 % For each segment of the ray
             if (rays_r{1,i}(j) < REC_r) && (rays_r{1,i}(j+1) > REC_r) % Select the two points arround the range of the receiver
-                % Finding the equation of the line A*X+B
+                % Finding the equation of the segment A*X+B
                 A = (rays_z{1,i}(j+1)-rays_z{1,i}(j))/(rays_r{1,i}(j+1)-rays_r{1,i}(j));
                 B = rays_z{1,i}(j) - A*rays_r{1,i}(j);
                 f_REC_r = A*REC_r + B;
