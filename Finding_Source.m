@@ -1,10 +1,10 @@
-function [r, z] = Finding_Source(theta_detec, time_detec, REC_r, REC_z_centered, H_d, c, W, dt)
+function [r, z] = Finding_Source(theta_detec, REC_r, REC_z_centered, H_d, c, W, dt)
     % Finding_Source - Ray tracing backward to find the source by using the correlation between time and space
     % 
     % Inputs:
     %    theta_detec - Angle detected on the receiver with the beamformer
     %    time_detec  - Depth of the source      !!! Not implemented yet !!!
-    %    {REC_r, REC_z_centered} - Position of the receiver
+    %    {REC_r, REC_z_centered} - Position of the center of the receiver
     %    H_d - Height of the seabed (depending on the range)
     %    c   - Sound speed profile (depending on the height)
     %    W   - Width max (max range)
@@ -12,8 +12,6 @@ function [r, z] = Finding_Source(theta_detec, time_detec, REC_r, REC_z_centered,
     % 
     % Outputs:
     %    [r, z] - Ray coordonates
-    %
-    % I will add a propability for each location using the correlation between time and space
     %
     %-----------------------------------------------------------------------------------------------
 
@@ -37,7 +35,7 @@ function [r, z] = Finding_Source(theta_detec, time_detec, REC_r, REC_z_centered,
     i = 2;
     theta = theta_detec;
 
-    while (r(i) > -1 && i < MAX_STEP)  % While the ray is in the rectangle %%%%%%%%%%%%%%%%%%%%%%%%%%
+    while (r(i) > -30 && i < MAX_STEP)  % While the ray is in the rectangle %%%%%%%%%%%%%%%%%%%%%%%%%%
 
         % Actual conditions
         last_c    = c(z(i-1)); % Sound speed at last depth
@@ -50,7 +48,11 @@ function [r, z] = Finding_Source(theta_detec, time_detec, REC_r, REC_z_centered,
                 theta = 360 - acosd((current_c/last_c)*cosd(theta));
             end
         else % total reflexion
-            theta = acosd((last_c/current_c)*cosd(theta));
+            if theta < 180
+                theta = 360 - acosd((last_c/current_c)*cosd(theta));
+            else
+                theta = acosd((last_c/current_c)*cosd(theta));
+            end
         end
         
         % Calculate increments in r and z
